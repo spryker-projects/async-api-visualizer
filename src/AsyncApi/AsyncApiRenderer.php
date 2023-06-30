@@ -36,12 +36,16 @@ class AsyncApiRenderer
         foreach ($asyncApiDetails as $channelName => $messages) {
             $channelVertex = $this->graph->createVertex(['id' => $channelName]);
             $channelVertex->setAttribute('graphviz.shape', 'cylinder');
+            $channelVertex->setAttribute('graphviz.color', 'grey');
+            $channelVertex->setAttribute('graphviz.label_url', sprintf('/channels/%s', $channelName));
 
             foreach ($messages as $messageName => $messageDetails) {
                 // This is for displaying who is subscribed so who consumes this message.
                 if (isset($messageDetails['subscriber'])) {
                     $messageVertex = $this->graph->createVertex(['id' => $messageName . PHP_EOL . '(subscribe)']);
                     $messageVertex->setAttribute('graphviz.shape', 'tab');
+                    $messageVertex->setAttribute('graphviz.label', $messageName);
+                    $messageVertex->setAttribute('graphviz.label_url', sprintf('/messages/%s', $messageName));
 
                     // Connect channel with message
                     $this->graph->createEdgeDirected($channelVertex, $messageVertex);
@@ -59,6 +63,8 @@ class AsyncApiRenderer
                 if (isset($messageDetails['publisher'])) {
                     $messageVertex = $this->graph->createVertex(['id' => $messageName . PHP_EOL . '(publish)']);
                     $messageVertex->setAttribute('graphviz.shape', 'tab');
+                    $messageVertex->setAttribute('graphviz.label', $messageName);
+                    $messageVertex->setAttribute('graphviz.label_url', sprintf('/messages/%s', $messageName));
 
                     // Connect message with channel
                     $this->graph->createEdgeDirected($messageVertex, $channelVertex);
