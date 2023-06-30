@@ -16,4 +16,4 @@ This package contains a Symfony Application for visualizing AsyncAPI schema file
 ## Starting the application
 
 - Run `symfonyserver:start`
-- Open `127.0.0:8000` in your browser. 
+- Open `127.0.0.1:8000` in your browser. 
