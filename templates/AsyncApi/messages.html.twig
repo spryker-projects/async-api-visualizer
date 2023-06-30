@@ -1,0 +1,20 @@
+{% extends 'base.html.twig' %}
+{%  block body %}
+    <h1>Messages which are published</h1>
+    <ul>
+        {% for message in publishedMessages %}
+            <li>
+                <a href="/messages/{{ message | url_encode }}">{{ message }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+
+    <h1>Messages which are subscribed</h1>
+    <ul>
+        {% for message in subscribedMessages %}
+            <li>
+                <a href="/messages/{{ message }}">{{ message }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

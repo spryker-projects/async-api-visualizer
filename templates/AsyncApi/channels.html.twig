@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+{%  block body %}
+    <h1>Channel list</h1>
+    <ul>
+        {% for channel in channels %}
+            <li>
+                <a href="/channels/{{ channel }}">{{ channel }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}

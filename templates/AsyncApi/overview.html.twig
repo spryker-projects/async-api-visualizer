@@ -1,0 +1,9 @@
+{% extends 'base.html.twig' %}
+{%  block body %}
+    <h1>Overview of all packages, message, and channels.</h1>
+    <div>
+        {% autoescape false %}
+            {{ graph }}
+        {% endautoescape %}
+    </div>
+{% endblock %}

@@ -1,0 +1,11 @@
+{% extends 'base.html.twig' %}
+{%  block body %}
+    <h1>Package list</h1>
+    <ul>
+        {% for packageUrl, packageName in packages %}
+            <li>
+                <a href="/packages/{{ packageUrl }}">{{ packageName }}</a>
+            </li>
+        {% endfor %}
+    </ul>
+{% endblock %}
