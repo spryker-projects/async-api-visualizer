@@ -14,7 +14,7 @@ class AsyncApiOverviewController extends AbstractController
     public function overview(AsyncApi $asyncApi, AsyncApiRenderer $asyncApiRenderer): Response
     {
         return $this->render('AsyncApi/overview.html.twig', [
-            'graph' => $asyncApiRenderer->createImageHtml($asyncApi->collect())
+            'graph' => $asyncApiRenderer->createImageHtml($asyncApi->getAsyncApiDetails())
         ]);
     }
 }

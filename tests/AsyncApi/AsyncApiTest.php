@@ -16,7 +16,7 @@ class AsyncApiTest extends KernelTestCase
         /** @var AsyncApi $asyncApi */
         $asyncApi = $container->get(AsyncApi::class);
 
-        $result = $asyncApi->collect();
+        $result = $asyncApi->getAsyncApiDetails();
 
         $this->assertIsArray($result, sprintf('Expected to get an array with AsyncAPI details but got "%s"', gettype($result)));
     }

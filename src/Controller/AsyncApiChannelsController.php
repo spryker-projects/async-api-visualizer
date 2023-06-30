@@ -14,7 +14,7 @@ class AsyncApiChannelsController extends AbstractController
     public function channels(AsyncApi $asyncApi): Response
     {
         return $this->render('AsyncApi/channels.html.twig', [
-            'channels' => $asyncApi->getChannels(),
+            'channels' => $asyncApi->getChannelNames(),
         ]);
     }
 
@@ -23,7 +23,7 @@ class AsyncApiChannelsController extends AbstractController
     {
         return $this->render('AsyncApi/channel.html.twig', [
             'graph' => $asyncApiRenderer->createImageHtml(
-                $asyncApi->getChannel($channelName)
+                $asyncApi->getChannelDetails($channelName)
             ),
             'channel' => $channelName,
         ]);

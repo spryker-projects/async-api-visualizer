@@ -19,6 +19,26 @@ class AsyncApiRenderer
     }
 
     /**
+     * @param array $asyncApiDetails
+     *
+     * @return string
+     */
+    public function createImageHtmlWithMessageDetails(array $asyncApiDetails): string
+    {
+        return $this->doCreateImageHtml($asyncApiDetails, true);
+    }
+
+    /**
+     * @param array $asyncApiDetails
+     *
+     * @return string
+     */
+    public function createImageHtml(array $asyncApiDetails): string
+    {
+        return $this->doCreateImageHtml($asyncApiDetails);
+    }
+
+    /**
      * Output will be like:
      * - "package that published a message" -> "message that gets published" -> "channel where the message is published to"
      * - "channel where a message is consumed from" -> "message that should be consumed" -> "package that consumes the message"
@@ -28,10 +48,11 @@ class AsyncApiRenderer
      * - Mark consuming line red when the publisher doesn't send all required fields
      *
      * @param array $asyncApiDetails
+     * @param bool $withMessageDetails
      *
      * @return string
      */
-    public function createImageHtml(array $asyncApiDetails): string
+    protected function doCreateImageHtml(array $asyncApiDetails, bool $withMessageDetails = false): string
     {
         foreach ($asyncApiDetails as $channelName => $messages) {
             $channelVertex = $this->graph->createVertex(['id' => $channelName]);
@@ -44,13 +65,19 @@ class AsyncApiRenderer
                 if (isset($messageDetails['subscriber'])) {
                     $messageVertex = $this->graph->createVertex(['id' => $messageName . PHP_EOL . '(subscribe)']);
                     $messageVertex->setAttribute('graphviz.shape', 'tab');
-                    $messageVertex->setAttribute('graphviz.label', $messageName);
-                    $messageVertex->setAttribute('graphviz.label_url', sprintf('/messages/%s', $messageName));
+//                    $messageVertex->setAttribute('graphviz.label_url', sprintf('/messages/%s', $messageName));
 
                     // Connect channel with message
                     $this->graph->createEdgeDirected($channelVertex, $messageVertex);
 
-                    foreach ($messageDetails['subscriber'] as $subscriberPackage => $sends) {
+                    foreach ($messageDetails['subscriber'] as $subscriberPackage => $subscriberDetails) {
+                        if ($withMessageDetails) {
+                            $messageDetails = $this->getMessageDetails($messageName, $subscriberDetails['requires']);
+                            $messageVertex->setAttribute('graphviz.label_html', $messageDetails);
+                        } else {
+                            $messageVertex->setAttribute('graphviz.label', $messageName);
+                        }
+
                         // Create subscriber vertex
                         $subscriberVertex = $this->graph->createVertex(['id' => $subscriberPackage]);
 
@@ -69,7 +96,13 @@ class AsyncApiRenderer
                     // Connect message with channel
                     $this->graph->createEdgeDirected($messageVertex, $channelVertex);
 
-                    foreach ($messageDetails['publisher'] as $publisherPackage => $sends) {
+                    foreach ($messageDetails['publisher'] as $publisherPackage => $publisherDetails) {
+                        if ($withMessageDetails) {
+                            $messageDetails = $this->getMessageDetails($messageName, $publisherDetails['sends']);
+                            $messageVertex->setAttribute('graphviz.label_html', $messageDetails);
+                        } else {
+                            $messageVertex->setAttribute('graphviz.label', $messageName);
+                        }
                         // Create publisher vertex
                         $publisherVertex = $this->graph->createVertex(['id' => $publisherPackage]);
 
@@ -81,5 +114,26 @@ class AsyncApiRenderer
         }
 
         return $this->graphViz->createImageHtml($this->graph);
+    }
+
+    /**
+     * @param string $label
+     * @param array $requiredAttributes
+     *
+     * @return string
+     */
+    protected function getMessageDetails(string $label, array $requiredAttributes): string
+    {
+        $html = sprintf('
+<table cellspacing="0" border="0" cellborder="1">
+    <tr><td bgcolor="#eeeeee">%s</td></tr>', $label);
+
+        foreach ($requiredAttributes as $requiredAttributeName => $requiredAttributeDetails) {
+            $html .= sprintf('<tr><td style="text-align: left">%s</td></tr>', $requiredAttributeName);
+        }
+
+        $html .= '</table>';
+
+        return $html;
     }
 }

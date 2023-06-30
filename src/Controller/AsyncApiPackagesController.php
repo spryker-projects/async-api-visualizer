@@ -14,7 +14,7 @@ class AsyncApiPackagesController extends AbstractController
     public function packages(AsyncApi $asyncApi): Response
     {
         return $this->render('AsyncApi/packages.html.twig', [
-            'packages' => $asyncApi->getPackages(),
+            'packages' => $asyncApi->getPackageNames(),
         ]);
     }
 
@@ -22,8 +22,8 @@ class AsyncApiPackagesController extends AbstractController
     public function package(string $packageName, AsyncApi $asyncApi, AsyncApiRenderer $asyncApiRenderer): Response
     {
         return $this->render('AsyncApi/package.html.twig', [
-            'graph' => $asyncApiRenderer->createImageHtml(
-                $asyncApi->getPackage($packageName)
+            'graph' => $asyncApiRenderer->createImageHtmlWithMessageDetails(
+                $asyncApi->getPackageDetails($packageName),
             ),
             'package' => str_replace('_', '/',$packageName),
         ]);
