@@ -97,8 +97,16 @@ class AsyncApi
 
         foreach ($asyncApiDetails as $channelName => $messages) {
             foreach ($messages as $messageName => $messageDetails) {
-                if (isset($otherAsyncApiDetails[$channelName][$messageName])) {
-                    $asyncApiDetails[$channelName][$messageName] = array_merge_recursive($asyncApiDetails[$channelName][$messageName], $otherAsyncApiDetails[$channelName][$messageName]);
+                foreach ($messageDetails as $type => $publisherOrSubscriber) {
+                    // Only add if we have the counter part of the current type e.g. when we have publisher we need to add only if there is subscriber on the other side.
+                    if (isset($otherAsyncApiDetails[$channelName][$messageName])) {
+                        $asyncApiDetails[$channelName][$messageName] = array_merge_recursive($asyncApiDetails[$channelName][$messageName], $otherAsyncApiDetails[$channelName][$messageName]);
+                    }
+
+                    if ($type === 'subscriber' && isset($otherAsyncApiDetails[$channelName][$messageName]['publisher'])) {
+
+                        $asyncApiDetails[$channelName][$messageName]['publisher'] = array_merge_recursive($asyncApiDetails[$channelName][$messageName], $otherAsyncApiDetails[$channelName][$messageName]);
+                    }
                 }
             }
         }
