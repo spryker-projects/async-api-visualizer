@@ -89,7 +89,7 @@ class AsyncApiRenderer
                     $messageVertex = $this->graph->createVertex(['id' => $messageName . PHP_EOL . '(publish)']);
                     $messageVertex->setAttribute('graphviz.shape', 'tab');
                     $messageVertex->setAttribute('graphviz.label', $messageName);
-                    $messageVertex->setAttribute('graphviz.label_url', sprintf('/messages/%s', $messageName));
+//                    $messageVertex->setAttribute('graphviz.label_url', sprintf('/messages/%s', $messageName));
 
                     // Connect message with channel
                     $this->graph->createEdgeDirected($messageVertex, $channelVertex);
