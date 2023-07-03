@@ -14,8 +14,8 @@ class AsyncApiMessagesController extends AbstractController
     public function messages(AsyncApi $asyncApi): Response
     {
         return $this->render('AsyncApi/messages.html.twig', [
-            'publishedMessages' => $asyncApi->getMessages()['published'],
-            'subscribedMessages' => $asyncApi->getMessages()['subscribed'],
+            'publishedMessages' => $asyncApi->getMessageNames()['published'],
+            'subscribedMessages' => $asyncApi->getMessageNames()['subscribed'],
         ]);
     }
 
@@ -24,7 +24,7 @@ class AsyncApiMessagesController extends AbstractController
     {
         return $this->render('AsyncApi/message.html.twig', [
             'graph' => $asyncApiRenderer->createImageHtml(
-                $asyncApi->getMessage($messageName)
+                $asyncApi->getMessageDetails($messageName)
             ),
             'message' => $messageName,
         ]);

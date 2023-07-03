@@ -40,6 +40,10 @@
 
 {#        <div class="col-lg-8 mx-auto p-3 py-md-5">#}
             {%  block header %}
+                {# Current path to compare with for active navigation #}
+                {% set currentPath = path(app.request.attributes.get('_route'),
+                    app.request.attributes.get('_route_params')) %}
+
                 <header class="d-flex flex-wrap justify-content-center py-3 mb-4 border-bottom">
                     <a href="/" class="d-flex align-items-center mb-3 mb-md-0 me-md-auto text-dark text-decoration-none">
                         <svg class="bi me-2" width="40" height="32"><use xlink:href="#bootstrap"/></svg>
@@ -47,10 +51,10 @@
                     </a>
 
                     <ul class="nav nav-pills">
-                        <li class="nav-item"><a href="/async-api" class="nav-link active" aria-current="page">Overview</a></li>
-                        <li class="nav-item"><a href="/channels" class="nav-link">Channels</a></li>
-                        <li class="nav-item"><a href="/messages" class="nav-link">Messages</a></li>
-                        <li class="nav-item"><a href="/packages" class="nav-link">Packages</a></li>
+                        <li class="nav-item"><a href="/async-api" class="nav-link{% if currentPath starts with '/async-api' %} active{% endif %}" aria-current="page">Overview</a></li>
+                        <li class="nav-item"><a href="/channels" class="nav-link{% if currentPath starts with '/channels' %} active{% endif %}">Channels</a></li>
+                        <li class="nav-item"><a href="/messages" class="nav-link{% if currentPath starts with '/messages' %} active{% endif %}">Messages</a></li>
+                        <li class="nav-item"><a href="/packages" class="nav-link{% if currentPath starts with '/packages' %} active{% endif %}">Packages</a></li>
                     </ul>
                 </header>
             {% endblock %}

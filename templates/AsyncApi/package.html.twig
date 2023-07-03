@@ -1,6 +1,11 @@
 {% extends 'base.html.twig' %}
 {%  block body %}
     <h1>Package "{{ package }}" details</h1>
+    {% if withDetails %}
+        <a type="button" class="btn btn-primary" href="/packages/{{ packageUrl }}">Hide message details</a>
+    {% else %}
+        <a type="button" class="btn btn-primary" href="/packages/{{ packageUrl }}/1">Show message details</a>
+    {% endif %}
     <div>
         {% autoescape false %}
             {{ graph }}

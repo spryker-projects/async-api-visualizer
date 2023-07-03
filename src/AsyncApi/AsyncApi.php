@@ -6,6 +6,7 @@ use SprykerSdk\AsyncApi\AsyncApi\AsyncApiInterface;
 use SprykerSdk\AsyncApi\AsyncApi\Channel\AsyncApiChannelInterface;
 use SprykerSdk\AsyncApi\AsyncApi\Loader\AsyncApiLoader;
 use SprykerSdk\AsyncApi\AsyncApi\Message\AsyncApiMessageInterface;
+use SprykerSdk\AsyncApi\AsyncApi\Message\Attributes\AsyncApiMessageAttributeCollectionInterface;
 use Symfony\Component\Cache\Adapter\FilesystemAdapter;
 use Symfony\Component\Finder\Finder;
 use Symfony\Contracts\Cache\ItemInterface;
@@ -32,9 +33,27 @@ class AsyncApi
     }
 
     /**
+     * @return array<AsyncApiInterface>
+     */
+    public function getAsyncApiDetails(): array
+    {
+        $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles();
+
+        $asyncApiDetails = [];
+
+        foreach ($asyncApiSchemaFiles as $asyncApiSchemaFile) {
+            $asyncApi = $this->loadAsyncApiFromFile($asyncApiSchemaFile);
+            $packageName = $this->getPackageNameFromFilePath($asyncApiSchemaFile);
+            $asyncApiDetails = $this->addChannelsAndMessagesFromAsyncApi($asyncApi, $packageName, $asyncApiDetails);
+        }
+
+        return $asyncApiDetails;
+    }
+
+    /**
      * @return array<string, string>
      */
-    public function getPackages(): array
+    public function getPackageNames(): array
     {
         $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles();
 
@@ -55,7 +74,7 @@ class AsyncApi
      *
      * @return array<string, string>
      */
-    public function getPackage(string $packageName): array
+    public function getPackageDetails(string $packageName): array
     {
         $packageName = str_replace('_', '/', $packageName);
         $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles($packageName);
@@ -78,8 +97,20 @@ class AsyncApi
 
         foreach ($asyncApiDetails as $channelName => $messages) {
             foreach ($messages as $messageName => $messageDetails) {
-                if (isset($otherAsyncApiDetails[$channelName][$messageName])) {
-                    $asyncApiDetails[$channelName][$messageName] = array_merge_recursive($asyncApiDetails[$channelName][$messageName], $otherAsyncApiDetails[$channelName][$messageName]);
+                foreach ($messageDetails as $type => $publisherOrSubscriber) {
+                    if ($type === 'subscriber' && isset($otherAsyncApiDetails[$channelName][$messageName]['publisher'])) {
+                        if (!isset($asyncApiDetails[$channelName][$messageName]['publisher'])) {
+                            $asyncApiDetails[$channelName][$messageName]['publisher'] = [];
+                        }
+                        $asyncApiDetails[$channelName][$messageName]['publisher'] = array_merge_recursive($asyncApiDetails[$channelName][$messageName]['publisher'], $otherAsyncApiDetails[$channelName][$messageName]['publisher']);
+                    }
+
+                    if ($type === 'publisher' && isset($otherAsyncApiDetails[$channelName][$messageName]['subscriber'])) {
+                        if (!isset($asyncApiDetails[$channelName][$messageName]['subscriber'])) {
+                            $asyncApiDetails[$channelName][$messageName]['subscriber'] = [];
+                        }
+                        $asyncApiDetails[$channelName][$messageName]['subscriber'] = array_merge_recursive($asyncApiDetails[$channelName][$messageName]['subscriber'], $otherAsyncApiDetails[$channelName][$messageName]['subscriber']);
+                    }
                 }
             }
         }
@@ -88,11 +119,32 @@ class AsyncApi
     }
 
     /**
+     * @return array<string, string>
+     */
+    public function getChannelNames(): array
+    {
+        $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles();
+
+        $channels = [];
+
+        foreach ($asyncApiSchemaFiles as $asyncApiSchemaFile) {
+            $asyncApi = $this->loadAsyncApiFromFile($asyncApiSchemaFile);
+            foreach ($asyncApi->getChannels() as $channel) {
+                $channels[$channel->getName()] = $channel->getName();
+            }
+        }
+
+        sort($channels);
+
+        return $channels;
+    }
+
+    /**
      * @param string $channelName
      *
      * @return array<string, string>
      */
-    public function getChannel(string $channelName): array
+    public function getChannelDetails(string $channelName): array
     {
         $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles();
 
@@ -114,11 +166,41 @@ class AsyncApi
     }
 
     /**
+     * @return array<string, array<string, string>>
+     */
+    public function getMessageNames(): array
+    {
+        $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles();
+
+        $messages = [
+            'published' => [],
+            'subscribed' => [],
+        ];
+
+        foreach ($asyncApiSchemaFiles as $asyncApiSchemaFile) {
+            $asyncApi = $this->loadAsyncApiFromFile($asyncApiSchemaFile);
+            foreach ($asyncApi->getChannels() as $channel) {
+                foreach ($channel->getPublishMessages() as $message) {
+                    $messages['subscribed'][$message->getName()] = $message->getName();
+                }
+                foreach ($channel->getSubscribeMessages() as $message) {
+                    $messages['published'][$message->getName()] = $message->getName();
+                }
+            }
+        }
+
+        sort($messages['published']);
+        sort($messages['subscribed']);
+
+        return $messages;
+    }
+
+    /**
      * @param string $messageName
      *
      * @return array<string, string>
      */
-    public function getMessage(string $messageName): array
+    public function getMessageDetails(string $messageName): array
     {
         $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles();
 
@@ -209,75 +291,6 @@ class AsyncApi
     }
 
     /**
-     * @return array<string, string>
-     */
-    public function getChannels(): array
-    {
-        $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles();
-
-        $channels = [];
-
-        foreach ($asyncApiSchemaFiles as $asyncApiSchemaFile) {
-            $asyncApi = $this->loadAsyncApiFromFile($asyncApiSchemaFile);
-            foreach ($asyncApi->getChannels() as $channel) {
-                $channels[$channel->getName()] = $channel->getName();
-            }
-        }
-
-        sort($channels);
-
-        return $channels;
-    }
-
-    /**
-     * @return array<string, array<string, string>>
-     */
-    public function getMessages(): array
-    {
-        $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles();
-
-        $messages = [
-            'published' => [],
-            'subscribed' => [],
-        ];
-
-        foreach ($asyncApiSchemaFiles as $asyncApiSchemaFile) {
-            $asyncApi = $this->loadAsyncApiFromFile($asyncApiSchemaFile);
-            foreach ($asyncApi->getChannels() as $channel) {
-                foreach ($channel->getPublishMessages() as $message) {
-                    $messages['subscribed'][$message->getName()] = $message->getName();
-                }
-                foreach ($channel->getSubscribeMessages() as $message) {
-                    $messages['published'][$message->getName()] = $message->getName();
-                }
-            }
-        }
-
-        sort($messages['published']);
-        sort($messages['subscribed']);
-
-        return $messages;
-    }
-
-    /**
-     * @return array<AsyncApiInterface>
-     */
-    public function collect(): array
-    {
-        $asyncApiSchemaFiles = $this->getAsyncApiSchemaFiles();
-
-        $asyncApiDetails = [];
-
-        foreach ($asyncApiSchemaFiles as $asyncApiSchemaFile) {
-            $asyncApi = $this->loadAsyncApiFromFile($asyncApiSchemaFile);
-            $packageName = $this->getPackageNameFromFilePath($asyncApiSchemaFile);
-            $asyncApiDetails = $this->addChannelsAndMessagesFromAsyncApi($asyncApi, $packageName, $asyncApiDetails);
-        }
-
-        return $asyncApiDetails;
-    }
-
-    /**
      * @param string $asyncApiSchemaFile
      * @param array $asyncApiDetails
      *
@@ -315,7 +328,7 @@ class AsyncApi
         }
 
         $asyncApiDetails[$channelName][$message->getName()]['publisher'][$package] = [
-            'sends' => [],
+            'sends' => $this->getRequiredAttributesForMessage($message),
         ];
 
         return $asyncApiDetails;
@@ -336,7 +349,7 @@ class AsyncApi
         }
 
         $asyncApiDetails[$channelName][$message->getName()]['subscriber'][$package] = [
-            'requires' => [],
+            'requires' => $this->getRequiredAttributesForMessage($message),
         ];
 
         return $asyncApiDetails;
@@ -373,5 +386,93 @@ class AsyncApi
         $organization = array_pop($pathFragments);
 
         return sprintf('%s/%s', $organization, $namespace);
+    }
+
+
+
+    /**
+     * @param \SprykerSdk\AsyncApi\AsyncApi\Message\AsyncApiMessageInterface $message
+     *
+     * @return array
+     */
+    protected function getRequiredAttributesForMessage(AsyncApiMessageInterface $message): array
+    {
+        $payloadAttribute = $message->getAttribute('payload');
+
+        // In case we have a "marker" message without any payload then we can skip the required field validation.
+        if (!$payloadAttribute) {
+            return [];
+        }
+
+        $requiredAttributes = [];
+        $this->getRequiredAttributes($payloadAttribute, $requiredAttributes);
+
+        return $requiredAttributes;
+    }
+
+    /**
+     * @param \SprykerSdk\AsyncApi\AsyncApi\Message\Attributes\AsyncApiMessageAttributeCollectionInterface $properties
+     * @param string $lookupAttributeName
+     *
+     * @return bool
+     */
+    protected function hasPropertiesCollectionProperty(AsyncApiMessageAttributeCollectionInterface $properties, string $lookupAttributeName): bool
+    {
+        foreach ($properties->getAttributes() as $attributeName => $attribute) {
+            if ($attributeName === $lookupAttributeName) {
+                return true;
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * @param \SprykerSdk\AsyncApi\AsyncApi\Message\Attributes\AsyncApiMessageAttributeCollectionInterface $properties
+     * @param string $lookupPropertyName
+     *
+     * @throws \Exception
+     *
+     * @return \SprykerSdk\AsyncApi\AsyncApi\Message\Attributes\AsyncApiMessageAttributeCollectionInterface
+     */
+    protected function getPropertiesCollectionProperty(
+        AsyncApiMessageAttributeCollectionInterface $properties,
+        string $lookupPropertyName
+    ): AsyncApiMessageAttributeCollectionInterface {
+        foreach ($properties->getAttributes() as $attributeName => $attribute) {
+            if ($attributeName !== $lookupPropertyName) {
+                continue;
+            }
+
+            return $attribute;
+        }
+
+        throw new \Exception(sprintf('You MUST call "hasPropertiesCollectionProperty" before "getPropertiesCollectionProperty". Property "%s" not found in collection.', $lookupPropertyName));
+    }
+
+    /**
+     * @param \SprykerSdk\AsyncApi\AsyncApi\Message\Attributes\AsyncApiMessageAttributeInterface $attribute
+     * @param array $requiredAttributes
+     * @param string $currentKey
+     *
+     * @return void
+     */
+    protected function getRequiredAttributes(AsyncApiMessageAttributeCollectionInterface $attribute, array &$requiredAttributes, string $currentKey = ''): void
+    {
+        $properties = $attribute->getAttribute('properties');
+        $required = $attribute->getAttribute('required');
+
+        if (!$required) {
+            return;
+        }
+
+        foreach ($required->getAttributes() as $attribute) {
+            $key = $currentKey ? sprintf('%s.%s', $currentKey, $attribute->getValue()) : $attribute->getValue();
+            $requiredAttributes[$key] = $key;
+
+            if ($this->hasPropertiesCollectionProperty($properties, $attribute->getValue())) {
+                $this->getRequiredAttributes($this->getPropertiesCollectionProperty($properties, $attribute->getValue()), $requiredAttributes, $key);
+            }
+        }
     }
 }

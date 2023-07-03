@@ -14,18 +14,40 @@ class AsyncApiPackagesController extends AbstractController
     public function packages(AsyncApi $asyncApi): Response
     {
         return $this->render('AsyncApi/packages.html.twig', [
-            'packages' => $asyncApi->getPackages(),
+            'packages' => $asyncApi->getPackageNames(),
         ]);
     }
 
-    #[Route('/packages/{packageName}')]
-    public function package(string $packageName, AsyncApi $asyncApi, AsyncApiRenderer $asyncApiRenderer): Response
+    #[Route('/packages/{packageName}/{withDetails}', name: 'package')]
+    public function package(string $packageName, AsyncApi $asyncApi, AsyncApiRenderer $asyncApiRenderer, bool $withDetails = false): Response
     {
+        $graph = $this->getGraph($packageName, $withDetails, $asyncApi, $asyncApiRenderer);
+
         return $this->render('AsyncApi/package.html.twig', [
-            'graph' => $asyncApiRenderer->createImageHtml(
-                $asyncApi->getPackage($packageName)
-            ),
+            'graph' => $graph,
             'package' => str_replace('_', '/',$packageName),
+            'packageUrl' => $packageName,
+            'withDetails' => $withDetails,
         ]);
+    }
+
+    /**
+     * @param string $packageName
+     * @param bool $withDetails
+     * @param AsyncApi $asyncApi
+     * @param AsyncApiRenderer $asyncApiRenderer
+     * @return string
+     */
+    protected function getGraph(string $packageName, bool $withDetails, AsyncApi $asyncApi, AsyncApiRenderer $asyncApiRenderer): string
+    {
+        if ($withDetails) {
+            return $asyncApiRenderer->createImageHtmlWithMessageDetails(
+                $asyncApi->getPackageDetails($packageName),
+            );
+        }
+
+        return $asyncApiRenderer->createImageHtml(
+            $asyncApi->getPackageDetails($packageName),
+        );
     }
 }
