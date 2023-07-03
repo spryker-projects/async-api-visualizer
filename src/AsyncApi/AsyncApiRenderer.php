@@ -65,17 +65,15 @@ class AsyncApiRenderer
                 if (isset($messageDetails['subscriber'])) {
                     $messageVertex = $this->graph->createVertex(['id' => $messageName . PHP_EOL . '(subscribe)']);
                     $messageVertex->setAttribute('graphviz.shape', 'tab');
-//                    $messageVertex->setAttribute('graphviz.label_url', sprintf('/messages/%s', $messageName));
 
                     // Connect channel with message
                     $this->graph->createEdgeDirected($channelVertex, $messageVertex);
+                    $messageVertex->setAttribute('graphviz.label', $messageName);
 
                     foreach ($messageDetails['subscriber'] as $subscriberPackage => $subscriberDetails) {
                         if ($withMessageDetails) {
                             $messageDetails = $this->getMessageDetails($messageName, $subscriberDetails['requires']);
                             $messageVertex->setAttribute('graphviz.label_html', $messageDetails);
-                        } else {
-                            $messageVertex->setAttribute('graphviz.label', $messageName);
                         }
 
                         // Create subscriber vertex
@@ -97,11 +95,9 @@ class AsyncApiRenderer
                     $this->graph->createEdgeDirected($messageVertex, $channelVertex);
 
                     foreach ($messageDetails['publisher'] as $publisherPackage => $publisherDetails) {
-                        if ($withMessageDetails) {
+                       if ($withMessageDetails) {
                             $messageDetails = $this->getMessageDetails($messageName, $publisherDetails['sends']);
                             $messageVertex->setAttribute('graphviz.label_html', $messageDetails);
-                        } else {
-                            $messageVertex->setAttribute('graphviz.label', $messageName);
                         }
                         // Create publisher vertex
                         $publisherVertex = $this->graph->createVertex(['id' => $publisherPackage]);
@@ -124,12 +120,14 @@ class AsyncApiRenderer
      */
     protected function getMessageDetails(string $label, array $requiredAttributes): string
     {
+        $requiredAttributes = count($requiredAttributes) ? $requiredAttributes : ['no required fields' => []];
+
         $html = sprintf('
 <table cellspacing="0" border="0" cellborder="1">
     <tr><td bgcolor="#eeeeee">%s</td></tr>', $label);
 
         foreach ($requiredAttributes as $requiredAttributeName => $requiredAttributeDetails) {
-            $html .= sprintf('<tr><td style="text-align: left">%s</td></tr>', $requiredAttributeName);
+            $html .= sprintf('<tr style="text-align: left"><td>%s</td></tr>', $requiredAttributeName);
         }
 
         $html .= '</table>';
