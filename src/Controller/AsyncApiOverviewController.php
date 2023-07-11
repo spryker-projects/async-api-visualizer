@@ -10,7 +10,7 @@ use Symfony\Component\Routing\Annotation\Route;
 
 class AsyncApiOverviewController extends AbstractController
 {
-    #[Route('/async-api')]
+    #[Route('/')]
     public function overview(AsyncApi $asyncApi, AsyncApiRenderer $asyncApiRenderer): Response
     {
         return $this->render('AsyncApi/overview.html.twig', [
